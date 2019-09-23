@@ -1,0 +1,353 @@
+apiVersion: v1
+items:
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2019-09-23T00:16:43Z"
+    generation: 1
+    labels:
+      app: flux
+      chart: flux-0.14.1
+      heritage: Helm
+      release: flux
+    name: flux
+    namespace: fluxcd
+    resourceVersion: "705185"
+    selfLink: /apis/extensions/v1beta1/namespaces/fluxcd/deployments/flux
+    uid: 6c2e0774-dd97-11e9-aeec-080027b61050
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: flux
+        release: flux
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: flux
+          release: flux
+      spec:
+        containers:
+        - args:
+          - --log-format=fmt
+          - --ssh-keygen-dir=/var/fluxd/keygen
+          - --k8s-secret-name=flux-git-deploy
+          - --memcached-hostname=flux-memcached
+          - --sync-state=git
+          - --memcached-service=
+          - --git-url=git@github.com:prvnmali2017/gitops-helm-workshop
+          - --git-branch=master
+          - --git-path=
+          - --git-readonly=false
+          - --git-user=Weave Flux
+          - --git-email=support@weave.works
+          - --git-set-author=false
+          - --git-poll-interval=1m
+          - --git-timeout=20s
+          - --sync-interval=1m
+          - --git-ci-skip=false
+          - --registry-poll-interval=1m
+          - --registry-rps=200
+          - --registry-burst=125
+          - --registry-trace=false
+          env:
+          - name: KUBECONFIG
+            value: /root/.kubectl/config
+          image: docker.io/fluxcd/flux:1.14.2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/flux/v6/identity.pub
+              port: 3030
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: flux
+          ports:
+          - containerPort: 3030
+            name: http
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/flux/v6/identity.pub
+              port: 3030
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /root/.kubectl
+            name: kubedir
+          - mountPath: /etc/fluxd/ssh
+            name: git-key
+            readOnly: true
+          - mountPath: /var/fluxd/keygen
+            name: git-keygen
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: flux
+        serviceAccountName: flux
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - configMap:
+            defaultMode: 420
+            name: flux-kube-config
+          name: kubedir
+        - name: git-key
+          secret:
+            defaultMode: 256
+            secretName: flux-git-deploy
+        - emptyDir:
+            medium: Memory
+          name: git-keygen
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2019-09-23T00:17:19Z"
+      lastUpdateTime: "2019-09-23T00:17:19Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2019-09-23T00:16:43Z"
+      lastUpdateTime: "2019-09-23T00:17:19Z"
+      message: ReplicaSet "flux-7cd876bf97" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2019-09-23T00:16:43Z"
+    generation: 1
+    labels:
+      app: flux-memcached
+      chart: flux-0.14.1
+      heritage: Helm
+      release: flux
+    name: flux-memcached
+    namespace: fluxcd
+    resourceVersion: "705181"
+    selfLink: /apis/extensions/v1beta1/namespaces/fluxcd/deployments/flux-memcached
+    uid: 6c2f0d7a-dd97-11e9-aeec-080027b61050
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: flux-memcached
+        release: flux
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        creationTimestamp: null
+        labels:
+          app: flux-memcached
+          release: flux
+      spec:
+        containers:
+        - args:
+          - -m 512
+          - -p 11211
+          - -I 5m
+          image: memcached:1.5.15
+          imagePullPolicy: IfNotPresent
+          name: memcached
+          ports:
+          - containerPort: 11211
+            name: memcached
+            protocol: TCP
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            procMount: Default
+            runAsGroup: 11211
+            runAsUser: 11211
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+  status:
+    availableReplicas: 1
+    conditions:
+    - lastTransitionTime: "2019-09-23T00:17:18Z"
+      lastUpdateTime: "2019-09-23T00:17:18Z"
+      message: Deployment has minimum availability.
+      reason: MinimumReplicasAvailable
+      status: "True"
+      type: Available
+    - lastTransitionTime: "2019-09-23T00:16:43Z"
+      lastUpdateTime: "2019-09-23T00:17:18Z"
+      message: ReplicaSet "flux-memcached-8545bfdbdd" has successfully progressed.
+      reason: NewReplicaSetAvailable
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    readyReplicas: 1
+    replicas: 1
+    updatedReplicas: 1
+- apiVersion: extensions/v1beta1
+  kind: Deployment
+  metadata:
+    annotations:
+      deployment.kubernetes.io/revision: "1"
+    creationTimestamp: "2019-09-23T00:57:07Z"
+    generation: 1
+    labels:
+      app: helm-operator
+      chart: helm-operator-0.1.1
+      heritage: Helm
+      release: helm-operator
+    name: helm-operator
+    namespace: fluxcd
+    resourceVersion: "709307"
+    selfLink: /apis/extensions/v1beta1/namespaces/fluxcd/deployments/helm-operator
+    uid: 11359ccf-dd9d-11e9-aeec-080027b61050
+  spec:
+    progressDeadlineSeconds: 600
+    replicas: 1
+    revisionHistoryLimit: 10
+    selector:
+      matchLabels:
+        app: helm-operator
+        release: helm-operator
+    strategy:
+      rollingUpdate:
+        maxSurge: 25%
+        maxUnavailable: 25%
+      type: RollingUpdate
+    template:
+      metadata:
+        annotations:
+          checksum/repositories: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        creationTimestamp: null
+        labels:
+          app: helm-operator
+          release: helm-operator
+      spec:
+        containers:
+        - args:
+          - --log-format=fmt
+          - --git-timeout=20s
+          - --git-poll-interval=1m
+          - --charts-sync-interval=1m
+          - --update-chart-deps=true
+          - --log-release-diffs=false
+          - --workers=2
+          - --tiller-namespace=kube-system
+          image: docker.io/fluxcd/helm-operator-prerelease:helm-v3-71bc9d62
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 3030
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          name: flux-helm-operator
+          ports:
+          - containerPort: 3030
+            name: http
+            protocol: TCP
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 3030
+              scheme: HTTP
+            initialDelaySeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          volumeMounts:
+          - mountPath: /etc/fluxd/ssh
+            name: git-key
+            readOnly: true
+          - mountPath: /var/fluxd/helm/repository/repositories.yaml
+            name: repositories-yaml
+            readOnly: true
+            subPath: repositories.yaml
+          - mountPath: /var/fluxd/helm/repository/cache
+            name: repositories-cache
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        serviceAccount: helm-operator
+        serviceAccountName: helm-operator
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: git-key
+          secret:
+            defaultMode: 256
+            secretName: flux-git-deploy
+        - name: repositories-yaml
+          secret:
+            secretName: flux-helm-repositories
+        - emptyDir: {}
+          name: repositories-cache
+  status:
+    conditions:
+    - lastTransitionTime: "2019-09-23T00:57:08Z"
+      lastUpdateTime: "2019-09-23T00:57:08Z"
+      message: Deployment does not have minimum availability.
+      reason: MinimumReplicasUnavailable
+      status: "False"
+      type: Available
+    - lastTransitionTime: "2019-09-23T01:16:03Z"
+      lastUpdateTime: "2019-09-23T01:18:48Z"
+      message: ReplicaSet "helm-operator-85cd997bc4" is progressing.
+      reason: ReplicaSetUpdated
+      status: "True"
+      type: Progressing
+    observedGeneration: 1
+    replicas: 1
+    unavailableReplicas: 1
+    updatedReplicas: 1
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
